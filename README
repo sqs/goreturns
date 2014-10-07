@@ -22,7 +22,9 @@ To view a diff showing what it'd do on a sample file:
 
 	goreturns -d $GOPATH/sourcegraph.com/sqs/goreturns/_sample/a.go
 
-Editor integration is not ready yet, but contributions are welcome.
+Editor integration: replace gofmt or goimports in your post-save hook
+with goreturns. By default goreturns calls goimports on files before
+performing its own processing.
 
 It acts the same as gofmt (same flags, etc) but in addition to code
 formatting, also fixes returns.
