@@ -4,11 +4,11 @@ and based on goimports.
 
 For example, the following incomplete return statement:
 
-	func F() (int, error) { return errors.New("foo") }
+	func F() (*MyType, int, error) { return errors.New("foo") }
 
 is made complete by adding 0 (the zero value for int):
 
-	func F() (int, error) { return 0, errors.New("foo") }
+	func F() (*MyType, int, error) { return nil, 0, errors.New("foo") }
 
 To install:
 
