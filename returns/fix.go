@@ -28,6 +28,8 @@ func fixReturns(fset *token.FileSet, f *ast.File) error {
 		switch v := node.(type) {
 		case *ast.FuncDecl:
 			inFunc = v.Type
+		case *ast.FuncLit:
+			inFunc = v.Type
 		case *ast.ReturnStmt:
 			incReturns[v] = inFunc
 		}

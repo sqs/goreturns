@@ -251,10 +251,21 @@ func F() (int, error) { return 7, errors.New("foo") }
 `,
 	},
 
+	// Preserve returns in closures when correct number of values.
+	{
+		name: "closures with valid-arity returns",
+		in: `package foo
+func F() (int, error) { _ = func() string { return "foo" } }
+`,
+		out: `package foo
+
+func F() (int, error) { _ = func() string { return "foo" } }
+`,
+	},
+
 	// Process returns in closures (not just top-level func decls).
 	{
 		name: "closures",
-		skip: true,
 		in: `package foo
 func main() { _ = func() (int, error) { return errors.New("foo") } }
 `,
