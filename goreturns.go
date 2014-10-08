@@ -80,9 +80,11 @@ func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error
 		return err
 	}
 
+	var res = src // This holds the result of processing so far.
+
 	if *goimports {
 		var err error
-		src, err = imports.Process(filename, src, &imports.Options{
+		res, err = imports.Process(filename, res, &imports.Options{
 			Fragment:  opt.Fragment,
 			AllErrors: opt.AllErrors,
 			Comments:  opt.Comments,
@@ -94,7 +96,7 @@ func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error
 		}
 	}
 
-	res, err := returns.Process(filename, src, opt)
+	res, err = returns.Process(filename, res, opt)
 	if err != nil {
 		return err
 	}
