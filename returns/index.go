@@ -1,8 +1,6 @@
 package returns
 
-import (
-	"go/ast"
-)
+import "go/ast"
 
 // funcHasSingleReturnVal returns true if func called by e has a
 // single return value (and false if it has multiple return values).

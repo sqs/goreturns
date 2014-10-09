@@ -299,12 +299,7 @@ func outer() (string, error) {
 }
 
 func TestFixReturns(t *testing.T) {
-	options := &Options{
-		TabWidth:  8,
-		TabIndent: true,
-		Comments:  true,
-		Fragment:  true,
-	}
+	options := &Options{Fragment: true}
 
 	for _, tt := range tests {
 		if *only != "" && tt.name != *only {

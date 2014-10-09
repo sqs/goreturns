@@ -36,9 +36,6 @@ var (
 
 func init() {
 	flag.BoolVar(&options.AllErrors, "e", false, "report all errors (not just the first 10 on different lines)")
-	flag.BoolVar(&options.Comments, "comments", true, "print comments")
-	flag.IntVar(&options.TabWidth, "tabwidth", 8, "tab width")
-	flag.BoolVar(&options.TabIndent, "tabs", true, "indent with tabs")
 }
 
 func report(err error) {
@@ -87,9 +84,6 @@ func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error
 		res, err = imports.Process(filename, res, &imports.Options{
 			Fragment:  opt.Fragment,
 			AllErrors: opt.AllErrors,
-			Comments:  opt.Comments,
-			TabIndent: opt.TabIndent,
-			TabWidth:  opt.TabWidth,
 		})
 		if err != nil {
 			return err
@@ -156,12 +150,6 @@ func main() {
 func gofmtMain() {
 	flag.Usage = usage
 	flag.Parse()
-
-	if options.TabWidth < 0 {
-		fmt.Fprintf(os.Stderr, "negative tabwidth %d\n", options.TabWidth)
-		exitCode = 2
-		return
-	}
 
 	if flag.NArg() == 0 {
 		if err := processFile("<standard input>", os.Stdin, os.Stdout, true); err != nil {

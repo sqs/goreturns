@@ -21,17 +21,13 @@ import (
 type Options struct {
 	Fragment  bool // Accept fragment of a source file (no package statement)
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
-
-	Comments  bool // Print comments (true if nil *Options provided)
-	TabIndent bool // Use tabs for indent (true if nil *Options provided)
-	TabWidth  int  // Tab width (8 if nil *Options provided)
 }
 
 // Process formats and adjusts returns for the provided file.
 // If opt is nil the defaults are used.
 func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 	if opt == nil {
-		opt = &Options{Comments: true, TabIndent: true, TabWidth: 8}
+		opt = &Options{}
 	}
 
 	fileSet := token.NewFileSet()
@@ -44,14 +40,8 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 		return nil, err
 	}
 
-	printerMode := printer.UseSpaces
-	if opt.TabIndent {
-		printerMode |= printer.TabIndent
-	}
-	printConfig := &printer.Config{Mode: printerMode, Tabwidth: opt.TabWidth}
-
 	var buf bytes.Buffer
-	err = printConfig.Fprint(&buf, fileSet, file)
+	err = printer.Fprint(&buf, fileSet, file)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +60,7 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 // parse parses src, which was read from filename,
 // as a Go source file or statement list.
 func parse(fset *token.FileSet, filename string, src []byte, opt *Options) (*ast.File, func(orig, src []byte) []byte, error) {
-	parserMode := parser.Mode(0)
-	if opt.Comments {
-		parserMode |= parser.ParseComments
-	}
+	parserMode := parser.ParseComments
 	if opt.AllErrors {
 		parserMode |= parser.AllErrors
 	}
