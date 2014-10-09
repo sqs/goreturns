@@ -51,6 +51,7 @@ IncReturnsLoop:
 			var singleRV bool
 			if e, ok := v.Fun.(*ast.SelectorExpr); ok {
 				if x, ok := e.X.(*ast.Ident); ok {
+					// exempt some functions that are known to only return one value
 					singleRV = (x.Name == "errors" && e.Sel.Name == "New") || (x.Name == "fmt" && e.Sel.Name == "Errorf")
 				}
 			}
