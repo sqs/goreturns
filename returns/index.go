@@ -13,5 +13,10 @@ func funcHasSingleReturnVal(e *ast.CallExpr) bool {
 			return (x.Name == "errors" && e.Sel.Name == "New") || (x.Name == "fmt" && e.Sel.Name == "Errorf")
 		}
 	}
+	if id, ok := e.Fun.(*ast.Ident); ok && id.Obj != nil {
+		if fn, ok := id.Obj.Decl.(*ast.FuncDecl); ok {
+			return len(fn.Type.Results.List) == 1
+		}
+	}
 	return false
 }

@@ -82,6 +82,22 @@ func F() ([]byte, error) { return ioutil.ReadFile("f") }
 `,
 	},
 
+	// Determine when local funcs have a single return value.
+	{
+		name: "local func with single return value",
+		in: `package foo
+func x() error { return errors.New("foo") }
+
+func F() (int, error) { return x() }
+`,
+		out: `package foo
+
+func x() error { return errors.New("foo") }
+
+func F() (int, error) { return 0, x() }
+`,
+	},
+
 	// Synthesize zero values for all primitives.
 	{
 		name: "primitives",
