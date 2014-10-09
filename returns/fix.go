@@ -47,15 +47,8 @@ IncReturnsLoop:
 
 		// skip if return value is a func call (whose multiple returns
 		// might be expanded)
-		if v, ok := ret.Results[0].(*ast.CallExpr); ok {
-			var singleRV bool
-			if e, ok := v.Fun.(*ast.SelectorExpr); ok {
-				if x, ok := e.X.(*ast.Ident); ok {
-					// exempt some functions that are known to only return one value
-					singleRV = (x.Name == "errors" && e.Sel.Name == "New") || (x.Name == "fmt" && e.Sel.Name == "Errorf")
-				}
-			}
-			if !singleRV {
+		if e, ok := ret.Results[0].(*ast.CallExpr); ok {
+			if !funcHasSingleReturnVal(e) {
 				continue
 			}
 		}
