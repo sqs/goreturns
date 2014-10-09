@@ -254,13 +254,30 @@ func F() (int, error) { return 7, errors.New("foo") }
 	// Process returns in closures (not just top-level func decls).
 	{
 		name: "closures",
-		skip: true,
 		in: `package foo
 func main() { _ = func() (int, error) { return errors.New("foo") } }
 `,
 		out: `package foo
 
 func main() { _ = func() (int, error) { return 0, errors.New("foo") } }
+`,
+	},
+
+	// Ensure that closure scopes don't leak
+	{
+		name: "closure scopes",
+		in: `package foo
+func outer() (string, error) {
+	_ = func() (int, error) { return errors.New("foo") }
+	return errors.New("foo")
+}
+`,
+		out: `package foo
+
+func outer() (string, error) {
+	_ = func() (int, error) { return 0, errors.New("foo") }
+	return "", errors.New("foo")
+}
 `,
 	},
 }

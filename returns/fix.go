@@ -19,21 +19,7 @@ func fixReturns(fset *token.FileSet, f *ast.File) error {
 	incReturns := map[*ast.ReturnStmt]*ast.FuncType{}
 
 	// collect incomplete returns
-	var visitor visitFn
-	var inFunc *ast.FuncType
-	visitor = visitFn(func(node ast.Node) ast.Visitor {
-		if node == nil {
-			return visitor
-		}
-		switch v := node.(type) {
-		case *ast.FuncDecl:
-			inFunc = v.Type
-		case *ast.ReturnStmt:
-			incReturns[v] = inFunc
-		}
-		return visitor
-	})
-	ast.Walk(visitor, f)
+	ast.Walk(visitor{returns: incReturns}, f)
 
 	//	printIncReturnsVerbose(fset, incReturns)
 
@@ -90,10 +76,24 @@ IncReturnsLoop:
 	return nil
 }
 
-type visitFn func(node ast.Node) ast.Visitor
+type visitor struct {
+	enclosing *ast.FuncType                     // innermost enclosing func
+	returns   map[*ast.ReturnStmt]*ast.FuncType // potentially incomplete returns
+}
 
-func (fn visitFn) Visit(node ast.Node) ast.Visitor {
-	return fn(node)
+func (v visitor) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		return v
+	}
+	switch n := node.(type) {
+	case *ast.FuncDecl:
+		return visitor{enclosing: n.Type, returns: v.returns}
+	case *ast.FuncLit:
+		return visitor{enclosing: n.Type, returns: v.returns}
+	case *ast.ReturnStmt:
+		v.returns[n] = v.enclosing
+	}
+	return v
 }
 
 // newZeroValueNode returns an AST expr representing the zero value of
