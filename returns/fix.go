@@ -10,9 +10,11 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+
+	"code.google.com/p/go.tools/go/types"
 )
 
-func fixReturns(fset *token.FileSet, f *ast.File) error {
+func fixReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) error {
 	// map of potentially incomplete return statements (that might
 	// need fixing) to the FuncType of the return's enclosing FuncDecl
 	// or FuncLit
@@ -48,7 +50,7 @@ IncReturnsLoop:
 		// skip if return value is a func call (whose multiple returns
 		// might be expanded)
 		if e, ok := ret.Results[0].(*ast.CallExpr); ok {
-			if !funcHasSingleReturnVal(e) {
+			if !funcHasSingleReturnVal(typeInfo, e) {
 				continue
 			}
 		}

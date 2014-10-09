@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"strings"
 
+	_ "code.google.com/p/go.tools/go/gcimporter"
 	"code.google.com/p/go.tools/imports"
 
 	"sourcegraph.com/sqs/goreturns/returns"
@@ -55,7 +56,7 @@ func isGoFile(f os.FileInfo) bool {
 	return !f.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 }
 
-func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error {
+func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin bool) error {
 	opt := options
 	if stdin {
 		nopt := *options
@@ -90,7 +91,7 @@ func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error
 		}
 	}
 
-	res, err = returns.Process(filename, res, opt)
+	res, err = returns.Process(pkgDir, filename, res, opt)
 	if err != nil {
 		return err
 	}
@@ -125,7 +126,7 @@ func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error
 
 func visitFile(path string, f os.FileInfo, err error) error {
 	if err == nil && isGoFile(f) {
-		err = processFile(path, nil, os.Stdout, false)
+		err = processFile(filepath.Dir(path), path, nil, os.Stdout, false)
 	}
 	if err != nil {
 		report(err)
@@ -152,7 +153,7 @@ func gofmtMain() {
 	flag.Parse()
 
 	if flag.NArg() == 0 {
-		if err := processFile("<standard input>", os.Stdin, os.Stdout, true); err != nil {
+		if err := processFile("", "<standard input>", os.Stdin, os.Stdout, true); err != nil {
 			report(err)
 		}
 		return
@@ -166,7 +167,7 @@ func gofmtMain() {
 		case dir.IsDir():
 			walkDir(path)
 		default:
-			if err := processFile(path, nil, os.Stdout, false); err != nil {
+			if err := processFile(filepath.Dir(path), path, nil, os.Stdout, false); err != nil {
 				report(err)
 			}
 		}

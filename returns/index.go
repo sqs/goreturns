@@ -1,20 +1,30 @@
 package returns
 
-import "go/ast"
+import (
+	"go/ast"
+
+	"code.google.com/p/go.tools/go/types"
+)
 
 // funcHasSingleReturnVal returns true if func called by e has a
 // single return value (and false if it has multiple return values).
-func funcHasSingleReturnVal(e *ast.CallExpr) bool {
-	if e, ok := e.Fun.(*ast.SelectorExpr); ok {
-		if x, ok := e.X.(*ast.Ident); ok {
-			// exempt some functions that are known to only return one value
-			return (x.Name == "errors" && e.Sel.Name == "New") || (x.Name == "fmt" && e.Sel.Name == "Errorf")
-		}
-	}
+func funcHasSingleReturnVal(typeInfo *types.Info, e *ast.CallExpr) bool {
+	// quick local pass
 	if id, ok := e.Fun.(*ast.Ident); ok && id.Obj != nil {
 		if fn, ok := id.Obj.Decl.(*ast.FuncDecl); ok {
 			return len(fn.Type.Results.List) == 1
 		}
 	}
+
+	if typeInfo != nil {
+		// look up in type info
+		typ := typeInfo.TypeOf(e)
+		if _, ok := typ.(*types.Tuple); ok {
+			return false
+		}
+		return true
+	}
+
+	// conservatively return false if we don't have type info
 	return false
 }

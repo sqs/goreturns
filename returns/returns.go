@@ -9,12 +9,18 @@ package returns
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
+	"go/build"
 	"go/format"
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
+
+	"code.google.com/p/go.tools/go/types"
 )
 
 // Options specifies options for processing files.
@@ -23,20 +29,22 @@ type Options struct {
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
 }
 
-// Process formats and adjusts returns for the provided file.
-// If opt is nil the defaults are used.
-func Process(filename string, src []byte, opt *Options) ([]byte, error) {
+// Process formats and adjusts returns for the provided file in a
+// package in pkgDir. If pkgDir is empty, the file is treated as a
+// standalone fragment (opt.Fragment should be true). If opt is nil
+// the defaults are used.
+func Process(pkgDir, filename string, src []byte, opt *Options) ([]byte, error) {
 	if opt == nil {
 		opt = &Options{}
 	}
 
 	fileSet := token.NewFileSet()
-	file, adjust, err := parse(fileSet, filename, src, opt)
+	file, adjust, typeInfo, err := parseAndCheck(fileSet, pkgDir, filename, src, opt)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := fixReturns(fileSet, file); err != nil {
+	if err := fixReturns(fileSet, file, typeInfo); err != nil {
 		return nil, err
 	}
 
@@ -55,6 +63,71 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt *Options) (*ast.File, func(orig, src []byte) []byte, *types.Info, error) {
+	var pkgFiles []*ast.File // all package files
+
+	// Parse the named file using `parse`, which handles fragments and reads from the src byte array.
+	file, adjust, err := parse(fset, filename, src, opt)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	pkgFiles = append(pkgFiles, file)
+
+	var importPath string
+	if pkgDir != "" {
+		// Parse other package files by reading from the filesystem.
+		dir := filepath.Dir(filename)
+		buildPkg, err := build.ImportDir(dir, 0)
+		if err != nil {
+			// TODO(sqs): support parser-only mode (that doesn't require
+			// files passed to goreturns to be part of a valid package)
+			return nil, nil, nil, err
+		}
+		importPath = buildPkg.ImportPath
+		for _, files := range [...][]string{buildPkg.GoFiles, buildPkg.CgoFiles} {
+			for _, file := range files {
+				if file == filepath.Base(filename) {
+					// already parsed this file above
+					continue
+				}
+				f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
+					continue
+				}
+				pkgFiles = append(pkgFiles, f)
+			}
+		}
+	}
+
+	var nerrs int
+	cfg := types.Config{
+		Error: func(err error) {
+			if opt.AllErrors || nerrs == 0 {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			nerrs++
+		},
+	}
+
+	info := &types.Info{
+		Types: map[ast.Expr]types.TypeAndValue{},
+		Uses:  map[*ast.Ident]types.Object{},
+		Defs:  map[*ast.Ident]types.Object{},
+	}
+	if _, err := cfg.Check(importPath, fset, pkgFiles, info); err != nil {
+		if terr, ok := err.(types.Error); ok && strings.HasPrefix(terr.Msg, "wrong number of return values") {
+			// ignore "wrong number of return values" errors
+		} else {
+			fmt.Fprintf(os.Stderr, "%s: typechecking failed (continuing without type info)\n", filename)
+			// proceed but without type info
+			return file, adjust, nil, nil
+		}
+	}
+
+	return file, adjust, info, nil
 }
 
 // parse parses src, which was read from filename,
