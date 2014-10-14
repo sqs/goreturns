@@ -85,6 +85,9 @@ func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin boo
 		res, err = imports.Process(filename, res, &imports.Options{
 			Fragment:  opt.Fragment,
 			AllErrors: opt.AllErrors,
+			Comments:  true,
+			TabIndent: true,
+			TabWidth:  8,
 		})
 		if err != nil {
 			return err
