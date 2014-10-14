@@ -14,7 +14,7 @@ is made complete by adding 0 (the zero value for int):
 
 To install:
 
-	go get sourcegraph.com/sqs/goreturns
+	go get -u sourcegraph.com/sqs/goreturns
 
 To run:
 
