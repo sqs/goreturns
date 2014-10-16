@@ -8,7 +8,8 @@ For example, the following incomplete return statement:
 
 	func F() (*MyType, int, error) { return errors.New("foo") }
 
-is made complete by adding 0 (the zero value for int):
+is made complete by adding nil and 0 returns (the zero values for
+*MyType and int):
 
 	func F() (*MyType, int, error) { return nil, 0, errors.New("foo") }
 
