@@ -25,7 +25,10 @@ import (
 
 // Options specifies options for processing files.
 type Options struct {
-	Fragment  bool // Accept fragment of a source file (no package statement)
+	Fragment bool // Accept fragment of a source file (no package statement)
+
+	PrintErrors bool // Print non-fatal typechecking errors to stderr (interferes with some tools that use gofmt/goimports and expect them to only print code or diffs to stdout + stderr)
+
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
 }
 
@@ -105,7 +108,7 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 	var nerrs int
 	cfg := types.Config{
 		Error: func(err error) {
-			if opt.AllErrors || nerrs == 0 {
+			if opt.PrintErrors && (opt.AllErrors || nerrs == 0) {
 				fmt.Fprintln(os.Stderr, err)
 			}
 			nerrs++
@@ -121,7 +124,9 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 		if terr, ok := err.(types.Error); ok && strings.HasPrefix(terr.Msg, "wrong number of return values") {
 			// ignore "wrong number of return values" errors
 		} else {
-			fmt.Fprintf(os.Stderr, "%s: typechecking failed (continuing without type info)\n", filename)
+			if opt.PrintErrors {
+				fmt.Fprintf(os.Stderr, "%s: typechecking failed (continuing without type info)\n", filename)
+			}
 			// proceed but without type info
 			return file, adjust, nil, nil
 		}
