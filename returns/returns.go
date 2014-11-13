@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/go.tools/go/types"
+	"golang.org/x/tools/go/types"
 )
 
 // Options specifies options for processing files.

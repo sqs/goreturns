@@ -11,7 +11,7 @@ import (
 	"go/token"
 	"os"
 
-	"code.google.com/p/go.tools/go/types"
+	"golang.org/x/tools/go/types"
 )
 
 func fixReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) error {

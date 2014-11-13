@@ -17,8 +17,8 @@ import (
 	"runtime"
 	"strings"
 
-	_ "code.google.com/p/go.tools/go/gcimporter"
-	"code.google.com/p/go.tools/imports"
+	_ "golang.org/x/tools/go/gcimporter"
+	"golang.org/x/tools/imports"
 
 	"sourcegraph.com/sqs/goreturns/returns"
 )

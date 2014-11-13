@@ -8,7 +8,7 @@ import (
 	"flag"
 	"testing"
 
-	_ "code.google.com/p/go.tools/go/gcimporter"
+	_ "golang.org/x/tools/go/gcimporter"
 )
 
 var only = flag.String("only", "", "If non-empty, the fix test to run")
