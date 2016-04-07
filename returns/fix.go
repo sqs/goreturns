@@ -9,9 +9,8 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"os"
-
-	"golang.org/x/tools/go/types"
 )
 
 func fixReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) error {
