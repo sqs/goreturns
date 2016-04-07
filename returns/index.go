@@ -2,8 +2,7 @@ package returns
 
 import (
 	"go/ast"
-
-	"golang.org/x/tools/go/types"
+	"go/types"
 )
 
 // funcHasSingleReturnVal returns true if func called by e has a

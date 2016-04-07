@@ -6,9 +6,8 @@ package returns
 
 import (
 	"flag"
+	_ "go/importer"
 	"testing"
-
-	_ "golang.org/x/tools/go/gcimporter"
 )
 
 var only = flag.String("only", "", "If non-empty, the fix test to run")

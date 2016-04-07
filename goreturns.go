@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	_ "go/importer"
 	"go/scanner"
 	"io"
 	"io/ioutil"
@@ -17,7 +18,6 @@ import (
 	"runtime"
 	"strings"
 
-	_ "golang.org/x/tools/go/gcimporter"
 	"golang.org/x/tools/imports"
 
 	"sourcegraph.com/sqs/goreturns/returns"
