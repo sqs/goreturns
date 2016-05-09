@@ -38,6 +38,7 @@ var (
 func init() {
 	flag.BoolVar(&options.PrintErrors, "p", false, "print non-fatal typechecking errors to stderr")
 	flag.BoolVar(&options.AllErrors, "e", false, "report all errors (not just the first 10 on different lines)")
+	flag.BoolVar(&options.RemoveBareReturns, "b", false, "remove bare returns")
 }
 
 func report(err error) {
