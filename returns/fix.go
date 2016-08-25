@@ -71,6 +71,44 @@ IncReturnsLoop:
 	return nil
 }
 
+func removeBareReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) error {
+	// map of return statements to the FuncType of the return's enclosing
+	// FuncDecl or FuncLit
+	incReturns := map[*ast.ReturnStmt]*ast.FuncType{}
+
+	// collect returns
+	ast.Walk(visitor{returns: incReturns}, f)
+
+	//	printIncReturnsVerbose(fset, incReturns)
+
+IncReturnsLoop:
+	for ret, ftyp := range incReturns {
+		if ftyp.Results == nil {
+			continue
+		}
+
+		numRVs := len(ret.Results)
+		if numRVs == len(ftyp.Results.List) {
+			// correct return arity
+			continue
+		}
+
+		if numRVs == 0 && len(ftyp.Results.List) > 0 {
+			zvs := make([]ast.Expr, len(ftyp.Results.List))
+			for i, rt := range ftyp.Results.List {
+				if len(rt.Names) == 0 {
+					continue IncReturnsLoop
+				}
+				zv := &ast.Ident{Name: rt.Names[0].Name}
+				zvs[i] = zv
+			}
+			ret.Results = append(zvs, ret.Results...)
+		}
+	}
+
+	return nil
+}
+
 type visitor struct {
 	enclosing *ast.FuncType                     // innermost enclosing func
 	returns   map[*ast.ReturnStmt]*ast.FuncType // potentially incomplete returns

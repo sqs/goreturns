@@ -29,6 +29,8 @@ type Options struct {
 	PrintErrors bool // Print non-fatal typechecking errors to stderr (interferes with some tools that use gofmt/goimports and expect them to only print code or diffs to stdout + stderr)
 
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
+
+	RemoveBareReturns bool // Remove bare returns
 }
 
 // Process formats and adjusts returns for the provided file in a
@@ -48,6 +50,12 @@ func Process(pkgDir, filename string, src []byte, opt *Options) ([]byte, error) 
 
 	if err := fixReturns(fileSet, file, typeInfo); err != nil {
 		return nil, err
+	}
+
+	if opt.RemoveBareReturns {
+		if err := removeBareReturns(fileSet, file, typeInfo); err != nil {
+			return nil, err
+		}
 	}
 
 	var buf bytes.Buffer
