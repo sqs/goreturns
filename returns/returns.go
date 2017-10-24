@@ -13,6 +13,7 @@ import (
 	"go/ast"
 	"go/build"
 	"go/format"
+	"go/importer"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -120,6 +121,7 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 			}
 			nerrs++
 		},
+		Importer: importer.Default(),
 	}
 
 	info := &types.Info{
