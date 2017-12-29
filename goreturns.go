@@ -28,6 +28,7 @@ var (
 	list   = flag.Bool("l", false, "list files whose formatting differs from goreturns's")
 	write  = flag.Bool("w", false, "write result to (source) file instead of stdout")
 	doDiff = flag.Bool("d", false, "display diffs instead of rewriting files")
+	srcdir = flag.String("srcdir", "", "choose imports as if source code is from `dir`. When operating on a single file, dir may instead be the complete file name.")
 
 	goimports = flag.Bool("i", true, "run goimports on the file prior to processing")
 
@@ -88,9 +89,33 @@ func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin boo
 
 	var res = src // This holds the result of processing so far.
 
+	target := filename
+	if *srcdir != "" {
+		// Determine whether the provided -srcdirc is a directory or file
+		// and then use it to override the target.
+		//
+		// See https://github.com/dominikh/go-mode.el/issues/146
+		f, err := os.Open(*srcdir)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		stat, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		if isGoFile(stat) {
+			target = *srcdir
+		} else {
+			// Pretend that file is from *srcdir in order to decide
+			// visible imports correctly.
+			target = filepath.Join(*srcdir, filepath.Base(filename))
+		}
+	}
+
 	if *goimports {
 		var err error
-		res, err = imports.Process(filename, res, &imports.Options{
+		res, err = imports.Process(target, res, &imports.Options{
 			Fragment:  opt.Fragment,
 			AllErrors: opt.AllErrors,
 			Comments:  true,
