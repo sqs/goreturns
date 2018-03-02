@@ -91,7 +91,7 @@ func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin boo
 
 	target := filename
 	if *srcdir != "" {
-		// Determine whether the provided -srcdirc is a directory or file
+		// Determine whether the provided -srcdir is a directory or file
 		// and then use it to override the target.
 		//
 		// See https://github.com/dominikh/go-mode.el/issues/146
@@ -106,6 +106,7 @@ func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin boo
 		}
 		if isGoFile(stat) {
 			target = *srcdir
+
 		} else {
 			// Pretend that file is from *srcdir in order to decide
 			// visible imports correctly.
