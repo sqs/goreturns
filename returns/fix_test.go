@@ -7,6 +7,9 @@ package returns
 import (
 	"flag"
 	_ "go/importer"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -447,5 +450,26 @@ func TestFixReturns(t *testing.T) {
 		if got := string(buf); got != tt.out {
 			t.Errorf("results diff on %q\nGOT:\n%s\nWANT:\n%s\n", tt.name, got, tt.out)
 		}
+	}
+}
+
+func TestSingleFile(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "goreturns-singlefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	pathA := filepath.Join(tmpDir, "a.go")
+	srcA := "package a"
+	if err := ioutil.WriteFile(pathA, []byte(srcA), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioutil.WriteFile(filepath.Join(tmpDir, "b.go"), []byte("package b"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Process(tmpDir, pathA, []byte(srcA), &Options{SingleFile: true}); err != nil {
+		t.Fatal(err)
 	}
 }
