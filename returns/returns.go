@@ -32,6 +32,9 @@ type Options struct {
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
 
 	RemoveBareReturns bool // Remove bare returns
+
+	// SingleFile indicates that the Go file should be considered as the only file in the Go package for typechecking purposes.
+	SingleFile bool
 }
 
 // Process formats and adjusts returns for the provided file in a
@@ -91,24 +94,27 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 		// Parse other package files by reading from the filesystem.
 		dir := filepath.Dir(filename)
 		buildPkg, err := build.ImportDir(dir, 0)
-		if err != nil {
-			// TODO(sqs): support parser-only mode (that doesn't require
-			// files passed to goreturns to be part of a valid package)
-			return nil, nil, nil, err
+		if buildPkg != nil {
+			importPath = buildPkg.ImportPath
 		}
-		importPath = buildPkg.ImportPath
-		for _, files := range [...][]string{buildPkg.GoFiles, buildPkg.CgoFiles} {
-			for _, file := range files {
-				if file == filepath.Base(filename) {
-					// already parsed this file above
-					continue
+		if _, ok := err.(*build.MultiplePackageError); ok {
+			// proceed
+		} else if err != nil {
+			return nil, nil, nil, err
+		} else {
+			for _, files := range [...][]string{buildPkg.GoFiles, buildPkg.CgoFiles} {
+				for _, file := range files {
+					if file == filepath.Base(filename) {
+						// already parsed this file above
+						continue
+					}
+					f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
+						continue
+					}
+					pkgFiles = append(pkgFiles, f)
 				}
-				f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
-					continue
-				}
-				pkgFiles = append(pkgFiles, f)
 			}
 		}
 	}

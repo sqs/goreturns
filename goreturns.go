@@ -106,7 +106,7 @@ func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin boo
 		}
 		if isGoFile(stat) {
 			target = *srcdir
-
+			opt.SingleFile = true
 		} else {
 			// Pretend that file is from *srcdir in order to decide
 			// visible imports correctly.
