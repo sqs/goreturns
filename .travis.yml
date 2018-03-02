@@ -1,0 +1,16 @@
+language: go
+
+go:
+  - 1.8
+  - 1.9
+  - 1.10
+
+go_import_path: github.com/sqs/goreturns
+
+install:
+  - go get -d -t ./...
+  - go test -i ./...
+
+script:
+  - cd $TRAVIS_BUILD_DIR
+  - go test -race -v ./...
