@@ -17,7 +17,7 @@ is made complete by adding nil and 0 returns (the zero values for
 
 To install:
 
-	go get -u sourcegraph.com/sqs/goreturns
+	go get -u github.com/sqs/goreturns
 
 To run:
 
@@ -25,7 +25,7 @@ To run:
 
 To view a diff showing what it'd do on a sample file:
 
-	goreturns -d $GOPATH/sourcegraph.com/sqs/goreturns/_sample/a.go
+	goreturns -d $GOPATH/github.com/sqs/goreturns/_sample/a.go
 
 Editor integration: replace gofmt or goimports in your post-save hook
 with goreturns. By default goreturns calls goimports on files before
