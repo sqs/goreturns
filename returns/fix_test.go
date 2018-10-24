@@ -243,17 +243,16 @@ func F() ([2]int, error) { return [2]int{}, errors.New("foo") }
 	// Synthesize zero values for structs in same package.
 	{
 		name: "structs",
-		skip: true,
 		in: `package foo
 import "errors"
-type T struct {}
+type T struct{}
 func F() (T, error) { return errors.New("foo") }
 `,
 		out: `package foo
 
 import "errors"
 
-type T struct {}
+type T struct{}
 
 func F() (T, error) { return T{}, errors.New("foo") }
 `,
@@ -307,17 +306,16 @@ func F() (url2.URL, error) { return url2.URL{}, errors.New("foo") }
 	// Synthesize zero values (nil) for interface types.
 	{
 		name: "interfaces",
-		skip: true,
 		in: `package foo
 import "errors"
-type I interface {}
+type I interface{}
 func F() (I, error) { return errors.New("foo") }
 `,
 		out: `package foo
 
 import "errors"
 
-type I interface {}
+type I interface{}
 
 func F() (I, error) { return nil, errors.New("foo") }
 `,
@@ -327,7 +325,6 @@ func F() (I, error) { return nil, errors.New("foo") }
 	// packages.
 	{
 		name: "external interfaces",
-		skip: true,
 		in: `package foo
 import (
 	"errors"
@@ -430,7 +427,7 @@ func outer() (string, error) {
 }
 
 func TestFixReturns(t *testing.T) {
-	options := &Options{Fragment: true}
+	options := &Options{Fragment: true, Format: true}
 
 	for _, tt := range tests {
 		if *only != "" && tt.name != *only {
@@ -447,5 +444,14 @@ func TestFixReturns(t *testing.T) {
 		if got := string(buf); got != tt.out {
 			t.Errorf("results diff on %q\nGOT:\n%s\nWANT:\n%s\n", tt.name, got, tt.out)
 		}
+	}
+}
+
+func BenchmarkFixReturns(b *testing.B) {
+	options := &Options{Fragment: true}
+
+	tt := tests[1]
+	for i := 0; i < b.N; i++ {
+		Process("", tt.name+".go", []byte(tt.in), options)
 	}
 }

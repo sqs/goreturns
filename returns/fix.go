@@ -5,12 +5,9 @@
 package returns
 
 import (
-	"fmt"
 	"go/ast"
-	"go/printer"
 	"go/token"
 	"go/types"
-	"os"
 )
 
 func fixReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) error {
@@ -21,8 +18,6 @@ func fixReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) error {
 
 	// collect incomplete returns
 	ast.Walk(visitor{returns: incReturns}, f)
-
-	//	printIncReturnsVerbose(fset, incReturns)
 
 IncReturnsLoop:
 	for ret, ftyp := range incReturns {
@@ -78,8 +73,6 @@ func removeBareReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) e
 
 	// collect returns
 	ast.Walk(visitor{returns: incReturns}, f)
-
-	//	printIncReturnsVerbose(fset, incReturns)
 
 IncReturnsLoop:
 	for ret, ftyp := range incReturns {
@@ -149,34 +142,36 @@ func newZeroValueNode(typ ast.Expr) ast.Expr {
 		case "error":
 			return &ast.Ident{Name: "nil"}
 		}
+		if v.Obj == nil {
+			// skip if there is no information
+			return nil
+		}
+
+		spec, ok := v.Obj.Decl.(*ast.TypeSpec)
+		if !ok {
+			// skip if don't know type spec
+			return nil
+		}
+
+		switch spec.Type.(type) {
+		case *ast.InterfaceType:
+			return &ast.Ident{Name: "nil"}
+		case *ast.StructType:
+			return &ast.Ident{Name: v.Name + "{}"}
+		}
 	case *ast.ArrayType:
 		if v.Len == nil {
-			// slice
 			return &ast.Ident{Name: "nil"}
 		}
 		return &ast.CompositeLit{Type: v}
 	case *ast.StarExpr:
 		return &ast.Ident{Name: "nil"}
+	case *ast.SelectorExpr:
+		// TODO: parse file to get type
+
+		// HACK: return nil as it's more common to return interface
+		// then empty struct
+		return &ast.Ident{Name: "nil"}
 	}
 	return nil
-}
-
-func printIncReturns(fset *token.FileSet, v map[*ast.ReturnStmt]*ast.FuncType) {
-	for ret, ftyp := range v {
-		fmt.Print("FUNC TYPE: ")
-		printer.Fprint(os.Stdout, fset, ftyp)
-		fmt.Print("   RETURN: ")
-		printer.Fprint(os.Stdout, fset, ret)
-		fmt.Println()
-	}
-}
-
-func printIncReturnsVerbose(fset *token.FileSet, v map[*ast.ReturnStmt]*ast.FuncType) {
-	for ret, ftyp := range v {
-		fmt.Print("FUNC TYPE: ")
-		ast.Print(fset, ftyp)
-		fmt.Print("   RETURN: ")
-		ast.Print(fset, ret)
-		fmt.Println()
-	}
 }
