@@ -14,7 +14,6 @@ var only = flag.String("only", "", "If non-empty, the fix test to run")
 
 var tests = []struct {
 	name    string
-	skip    bool
 	in, out string
 }{
 	// No-op
@@ -243,17 +242,16 @@ func F() ([2]int, error) { return [2]int{}, errors.New("foo") }
 	// Synthesize zero values for structs in same package.
 	{
 		name: "structs",
-		skip: true,
 		in: `package foo
 import "errors"
-type T struct {}
+type T struct{}
 func F() (T, error) { return errors.New("foo") }
 `,
 		out: `package foo
 
 import "errors"
 
-type T struct {}
+type T struct{}
 
 func F() (T, error) { return T{}, errors.New("foo") }
 `,
@@ -262,7 +260,6 @@ func F() (T, error) { return T{}, errors.New("foo") }
 	// Synthesize zero values for structs in different package.
 	{
 		name: "external structs",
-		skip: true,
 		in: `package foo
 import (
 	"errors"
@@ -285,7 +282,6 @@ func F() (url.URL, error) { return url.URL{}, errors.New("foo") }
 	// imported using an alias.
 	{
 		name: "external structs (with import alias)",
-		skip: true,
 		in: `package foo
 import (
 	"errors"
@@ -307,17 +303,16 @@ func F() (url2.URL, error) { return url2.URL{}, errors.New("foo") }
 	// Synthesize zero values (nil) for interface types.
 	{
 		name: "interfaces",
-		skip: true,
 		in: `package foo
 import "errors"
-type I interface {}
+type I interface{}
 func F() (I, error) { return errors.New("foo") }
 `,
 		out: `package foo
 
 import "errors"
 
-type I interface {}
+type I interface{}
 
 func F() (I, error) { return nil, errors.New("foo") }
 `,
@@ -327,7 +322,6 @@ func F() (I, error) { return nil, errors.New("foo") }
 	// packages.
 	{
 		name: "external interfaces",
-		skip: true,
 		in: `package foo
 import (
 	"errors"
@@ -436,9 +430,6 @@ func TestFixReturns(t *testing.T) {
 		if *only != "" && tt.name != *only {
 			continue
 		}
-		if tt.skip {
-			continue
-		}
 		buf, err := Process("", tt.name+".go", []byte(tt.in), options)
 		if err != nil {
 			t.Errorf("error on %q: %v", tt.name, err)
@@ -447,5 +438,14 @@ func TestFixReturns(t *testing.T) {
 		if got := string(buf); got != tt.out {
 			t.Errorf("results diff on %q\nGOT:\n%s\nWANT:\n%s\n", tt.name, got, tt.out)
 		}
+	}
+}
+
+func BenchmarkFixReturns(b *testing.B) {
+	options := &Options{Fragment: true}
+
+	tt := tests[1]
+	for i := 0; i < b.N; i++ {
+		Process("", tt.name+".go", []byte(tt.in), options)
 	}
 }

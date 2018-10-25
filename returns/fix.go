@@ -57,7 +57,7 @@ IncReturnsLoop:
 		// left-fill zero values
 		zvs := make([]ast.Expr, len(ftyp.Results.List)-numRVs)
 		for i, rt := range ftyp.Results.List[:len(zvs)] {
-			zv := newZeroValueNode(rt.Type)
+			zv := newZeroValueNode(rt.Type, typeInfo)
 			if zv == nil {
 				// be conservative; if we can't determine the zero
 				// value, don't fill in anything
@@ -78,8 +78,6 @@ func removeBareReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) e
 
 	// collect returns
 	ast.Walk(visitor{returns: incReturns}, f)
-
-	//	printIncReturnsVerbose(fset, incReturns)
 
 IncReturnsLoop:
 	for ret, ftyp := range incReturns {
@@ -132,7 +130,7 @@ func (v visitor) Visit(node ast.Node) ast.Visitor {
 // newZeroValueNode returns an AST expr representing the zero value of
 // typ. If determining the zero value requires additional information
 // (e.g., type-checking output), it returns nil.
-func newZeroValueNode(typ ast.Expr) ast.Expr {
+func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 	switch v := typ.(type) {
 	case *ast.Ident:
 		switch v.Name {
@@ -149,6 +147,23 @@ func newZeroValueNode(typ ast.Expr) ast.Expr {
 		case "error":
 			return &ast.Ident{Name: "nil"}
 		}
+		if v.Obj == nil {
+			// skip if there is no information
+			return nil
+		}
+
+		spec, ok := v.Obj.Decl.(*ast.TypeSpec)
+		if !ok {
+			// skip if don't know type spec
+			return nil
+		}
+
+		switch spec.Type.(type) {
+		case *ast.InterfaceType:
+			return &ast.Ident{Name: "nil"}
+		case *ast.StructType:
+			return &ast.Ident{Name: v.Name + "{}"}
+		}
 	case *ast.ArrayType:
 		if v.Len == nil {
 			// slice
@@ -157,6 +172,25 @@ func newZeroValueNode(typ ast.Expr) ast.Expr {
 		return &ast.CompositeLit{Type: v}
 	case *ast.StarExpr:
 		return &ast.Ident{Name: "nil"}
+	case *ast.SelectorExpr:
+		ident, ok := v.X.(*ast.Ident)
+		if !ok {
+			// no info about import
+			return nil
+		}
+
+		// find import spec
+		obj, ok := typeInfo.Uses[v.Sel]
+		if !ok {
+			return nil
+		}
+
+		switch obj.Type().Underlying().(type) {
+		case *types.Struct:
+			return &ast.Ident{Name: ident.Name + "." + v.Sel.Name + "{}"}
+		case *types.Interface:
+			return &ast.Ident{Name: "nil"}
+		}
 	}
 	return nil
 }
