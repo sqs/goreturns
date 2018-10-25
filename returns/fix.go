@@ -184,7 +184,12 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 }
 
 func newZeroImportValueNode(v *ast.Ident, typeInfo *types.Info, prefix string) *ast.Ident {
-	// find import spec
+	// on parse error typeInfo is nil
+	if typeInfo == nil || typeInfo.Uses == nil {
+		return nil
+	}
+
+	// find type spec
 	obj, ok := typeInfo.Uses[v]
 	if !ok {
 		return nil
