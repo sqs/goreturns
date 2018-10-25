@@ -91,25 +91,26 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 		// Parse other package files by reading from the filesystem.
 		dir := filepath.Dir(filename)
 		buildPkg, err := build.ImportDir(dir, 0)
-		if err != nil {
+		if err == nil {
+			importPath = buildPkg.ImportPath
+			for _, files := range [...][]string{buildPkg.GoFiles, buildPkg.CgoFiles} {
+				for _, file := range files {
+					if file == filepath.Base(filename) {
+						// already parsed this file above
+						continue
+					}
+					f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
+						continue
+					}
+					pkgFiles = append(pkgFiles, f)
+				}
+			}
+		} else if _, ok := err.(*build.NoGoError); !ok {
 			// TODO(sqs): support parser-only mode (that doesn't require
 			// files passed to goreturns to be part of a valid package)
 			return nil, nil, nil, err
-		}
-		importPath = buildPkg.ImportPath
-		for _, files := range [...][]string{buildPkg.GoFiles, buildPkg.CgoFiles} {
-			for _, file := range files {
-				if file == filepath.Base(filename) {
-					// already parsed this file above
-					continue
-				}
-				f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
-					continue
-				}
-				pkgFiles = append(pkgFiles, f)
-			}
 		}
 	}
 
