@@ -149,20 +149,7 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 		}
 		if v.Obj == nil {
 			// check if ident is one of type imported with '.'
-			obj, ok := typeInfo.Uses[v]
-			if !ok {
-				return nil
-			}
-
-			switch obj.Type().Underlying().(type) {
-			case *types.Struct:
-				return &ast.Ident{Name: v.Name + "{}"}
-			case *types.Interface:
-				return &ast.Ident{Name: "nil"}
-			}
-
-			// skip if there is no information
-			return nil
+			return newZeroImportValueNode(v, typeInfo, "")
 		}
 
 		spec, ok := v.Obj.Decl.(*ast.TypeSpec)
@@ -191,19 +178,27 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 			// no info about import
 			return nil
 		}
+		return newZeroImportValueNode(v.Sel, typeInfo, ident.Name)
+	}
+	return nil
+}
 
-		// find import spec
-		obj, ok := typeInfo.Uses[v.Sel]
-		if !ok {
-			return nil
-		}
+func newZeroImportValueNode(v *ast.Ident, typeInfo *types.Info, prefix string) *ast.Ident {
+	// find import spec
+	obj, ok := typeInfo.Uses[v]
+	if !ok {
+		return nil
+	}
 
-		switch obj.Type().Underlying().(type) {
-		case *types.Struct:
-			return &ast.Ident{Name: ident.Name + "." + v.Sel.Name + "{}"}
-		case *types.Interface:
-			return &ast.Ident{Name: "nil"}
-		}
+	if prefix != "" {
+		prefix += "."
+	}
+
+	switch obj.Type().Underlying().(type) {
+	case *types.Struct:
+		return &ast.Ident{Name: prefix + v.Name + "{}"}
+	case *types.Interface:
+		return &ast.Ident{Name: "nil"}
 	}
 	return nil
 }
