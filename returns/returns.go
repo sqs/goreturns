@@ -32,6 +32,10 @@ type Options struct {
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
 
 	RemoveBareReturns bool // Remove bare returns
+
+	Format bool // Format source after inserting returns
+
+	ExcludeFile string
 }
 
 // Process formats and adjusts returns for the provided file in a
@@ -89,8 +93,7 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 	var importPath string
 	if pkgDir != "" {
 		// Parse other package files by reading from the filesystem.
-		dir := filepath.Dir(filename)
-		buildPkg, err := build.ImportDir(dir, 0)
+		buildPkg, err := build.ImportDir(pkgDir, 0)
 		if err == nil {
 			importPath = buildPkg.ImportPath
 			for _, files := range [...][]string{buildPkg.GoFiles, buildPkg.CgoFiles} {
@@ -99,7 +102,12 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 						// already parsed this file above
 						continue
 					}
-					f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
+
+					if file == opt.ExcludeFile {
+						// exclude file
+						continue
+					}
+					f, err := parser.ParseFile(fset, filepath.Join(pkgDir, file), nil, 0)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
 						continue

@@ -29,6 +29,7 @@ var (
 	write  = flag.Bool("w", false, "write result to (source) file instead of stdout")
 	doDiff = flag.Bool("d", false, "display diffs instead of rewriting files")
 	srcdir = flag.String("srcdir", "", "choose imports as if source code is from `dir`. When operating on a single file, dir may instead be the complete file name.")
+	pkgDir = flag.String("pkgdir", "", "choose package dir to read source files")
 
 	goimports = flag.Bool("i", true, "run goimports on the file prior to processing")
 
@@ -40,6 +41,7 @@ func init() {
 	flag.BoolVar(&options.PrintErrors, "p", false, "print non-fatal typechecking errors to stderr")
 	flag.BoolVar(&options.AllErrors, "e", false, "report all errors (not just the first 10 on different lines)")
 	flag.BoolVar(&options.RemoveBareReturns, "b", false, "remove bare returns")
+	flag.StringVar(&options.ExcludeFile, "exclude", "", "exclude source file from parsing")
 	flag.StringVar(
 		&imports.LocalPrefix,
 		"local",
@@ -163,7 +165,7 @@ func processFile(pkgDir, filename string, in io.Reader, out io.Writer, stdin boo
 
 func visitFile(path string, f os.FileInfo, err error) error {
 	if err == nil && isGoFile(f) {
-		err = processFile(filepath.Dir(path), path, nil, os.Stdout, false)
+		err = processFile(*pkgDir, path, nil, os.Stdout, false)
 	}
 	if err != nil {
 		report(err)
@@ -198,13 +200,16 @@ func gofmtMain() {
 
 	for i := 0; i < flag.NArg(); i++ {
 		path := flag.Arg(i)
+		if *pkgDir == "" {
+			*pkgDir = filepath.Dir(path)
+		}
 		switch dir, err := os.Stat(path); {
 		case err != nil:
 			report(err)
 		case dir.IsDir():
 			walkDir(path)
 		default:
-			if err := processFile(filepath.Dir(path), path, nil, os.Stdout, false); err != nil {
+			if err := processFile(*pkgDir, path, nil, os.Stdout, false); err != nil {
 				report(err)
 			}
 		}
