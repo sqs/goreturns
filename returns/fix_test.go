@@ -140,6 +140,27 @@ func F() (int, error) { return 0, (x(http.ListenAndServe))("", nil) }
 `,
 	},
 
+	// Synthesize zero values for structs in different package.
+	{
+		name: "external structs (with import to current block)",
+		in: `package foo
+import (
+	"errors"
+	. "net/url"
+)
+func F() (URL, error) { return errors.New("foo") }
+`,
+		out: `package foo
+
+import (
+	"errors"
+	. "net/url"
+)
+
+func F() (URL, error) { return URL{}, errors.New("foo") }
+`,
+	},
+
 	// Determine when external funcs have multiple return values.
 	{
 		name: "ext func with multiple return values",
@@ -337,6 +358,28 @@ import (
 )
 
 func F() (io.Reader, error) { return nil, errors.New("foo") }
+`,
+	},
+
+	// Synthesize zero values (nil) for interface types in external
+	// packages.
+	{
+		name: "external interfaces (with import to current block)",
+		in: `package foo
+import (
+	"errors"
+	. "io"
+)
+func F() (Reader, error) { return errors.New("foo") }
+`,
+		out: `package foo
+
+import (
+	"errors"
+	. "io"
+)
+
+func F() (Reader, error) { return nil, errors.New("foo") }
 `,
 	},
 

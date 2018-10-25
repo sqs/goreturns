@@ -148,6 +148,19 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 			return &ast.Ident{Name: "nil"}
 		}
 		if v.Obj == nil {
+			// check if ident is one of type imported with '.'
+			obj, ok := typeInfo.Uses[v]
+			if !ok {
+				return nil
+			}
+
+			switch obj.Type().Underlying().(type) {
+			case *types.Struct:
+				return &ast.Ident{Name: v.Name + "{}"}
+			case *types.Interface:
+				return &ast.Ident{Name: "nil"}
+			}
+
 			// skip if there is no information
 			return nil
 		}
