@@ -89,8 +89,7 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 	var importPath string
 	if pkgDir != "" {
 		// Parse other package files by reading from the filesystem.
-		dir := filepath.Dir(filename)
-		buildPkg, err := build.ImportDir(dir, 0)
+		buildPkg, err := build.ImportDir(pkgDir, 0)
 		if err != nil {
 			// TODO(sqs): support parser-only mode (that doesn't require
 			// files passed to goreturns to be part of a valid package)
@@ -103,7 +102,7 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 					// already parsed this file above
 					continue
 				}
-				f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
+				f, err := parser.ParseFile(fset, filepath.Join(pkgDir, file), nil, 0)
 				if err != nil {
 					if opt.PrintErrors {
 						fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
