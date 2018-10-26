@@ -105,7 +105,9 @@ func parseAndCheck(fset *token.FileSet, pkgDir, filename string, src []byte, opt
 				}
 				f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
+					if opt.PrintErrors {
+						fmt.Fprintf(os.Stderr, "could not parse %q: %v\n", file, err)
+					}
 					continue
 				}
 				pkgFiles = append(pkgFiles, f)
