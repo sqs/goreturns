@@ -278,6 +278,29 @@ func F() (T, error) { return T{}, errors.New("foo") }
 `,
 	},
 
+	// Synthesize zero values for struct type alias.
+	{
+		name: "struct type alias",
+		in: `package foo
+
+import "errors"
+
+type T struct{}
+type T1 = T
+
+func F() (T1, error) { return errors.New("foo") }
+`,
+		out: `package foo
+
+import "errors"
+
+type T struct{}
+type T1 = T
+
+func F() (T1, error) { return T1{}, errors.New("foo") }
+`,
+	},
+
 	// Synthesize zero values for structs in different package.
 	{
 		name: "external structs",
@@ -336,6 +359,29 @@ import "errors"
 type I interface{}
 
 func F() (I, error) { return nil, errors.New("foo") }
+`,
+	},
+
+	// Synthesize zero values for interface type alias.
+	{
+		name: "interface type alias",
+		in: `package foo
+
+import "errors"
+
+type I interface{}
+type I1 = I
+
+func F() (I1, error) { return errors.New("foo") }
+`,
+		out: `package foo
+
+import "errors"
+
+type I interface{}
+type I1 = I
+
+func F() (I1, error) { return nil, errors.New("foo") }
 `,
 	},
 
