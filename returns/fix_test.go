@@ -250,6 +250,36 @@ func F() ([]int, error) { return nil, errors.New("foo") }
 		name: "arrays",
 		in: `package foo
 import "errors"
+func F() ([1]int, error) { return errors.New("foo") }
+`,
+		out: `package foo
+
+import "errors"
+
+func F() ([1]int, error) { return [1]int{}, errors.New("foo") }
+`,
+	},
+
+	// Synthesize zero values (nil) for maps.
+	{
+		name: "maps",
+		in: `package foo
+import "errors"
+func F() (map[string]int, error) { return errors.New("foo") }
+`,
+		out: `package foo
+
+import "errors"
+
+func F() (map[string]int, error) { return nil, errors.New("foo") }
+`,
+	},
+
+	// Synthesize zero values for arrays.
+	{
+		name: "arrays",
+		in: `package foo
+import "errors"
 func F() ([2]int, error) { return errors.New("foo") }
 `,
 		out: `package foo
