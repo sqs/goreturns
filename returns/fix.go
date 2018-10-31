@@ -57,7 +57,7 @@ IncReturnsLoop:
 		// left-fill zero values
 		zvs := make([]ast.Expr, len(ftyp.Results.List)-numRVs)
 		for i, rt := range ftyp.Results.List[:len(zvs)] {
-			zv := newZeroValueNode(rt.Type)
+			zv := newZeroValueNode(rt.Type, typeInfo)
 			if zv == nil {
 				// be conservative; if we can't determine the zero
 				// value, don't fill in anything
@@ -78,8 +78,6 @@ func removeBareReturns(fset *token.FileSet, f *ast.File, typeInfo *types.Info) e
 
 	// collect returns
 	ast.Walk(visitor{returns: incReturns}, f)
-
-	//	printIncReturnsVerbose(fset, incReturns)
 
 IncReturnsLoop:
 	for ret, ftyp := range incReturns {
@@ -132,7 +130,7 @@ func (v visitor) Visit(node ast.Node) ast.Visitor {
 // newZeroValueNode returns an AST expr representing the zero value of
 // typ. If determining the zero value requires additional information
 // (e.g., type-checking output), it returns nil.
-func newZeroValueNode(typ ast.Expr) ast.Expr {
+func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 	switch v := typ.(type) {
 	case *ast.Ident:
 		switch v.Name {
@@ -149,15 +147,106 @@ func newZeroValueNode(typ ast.Expr) ast.Expr {
 		case "error":
 			return &ast.Ident{Name: "nil"}
 		}
+
+		if v.Obj == nil {
+			// check if ident is one of type imported with '.'
+			zero := newZeroImportValueNode(v, typeInfo, "")
+			if zero == nil {
+				return nil
+			}
+			return zero
+		}
+
+		spec, ok := v.Obj.Decl.(*ast.TypeSpec)
+		if !ok {
+			// skip if don't know type spec
+			return nil
+		}
+
+		switch spec.Type.(type) {
+		case *ast.InterfaceType:
+			return &ast.Ident{Name: "nil"}
+		case *ast.StructType:
+			return &ast.Ident{Name: v.Name + "{}"}
+		case *ast.Ident:
+			// type alias
+			zero := newZeroImportValueNode(v, typeInfo, "")
+			if zero == nil {
+				return nil
+			}
+			return zero
+		}
 	case *ast.ArrayType:
 		if v.Len == nil {
 			// slice
 			return &ast.Ident{Name: "nil"}
 		}
 		return &ast.CompositeLit{Type: v}
+	case *ast.MapType:
+		return &ast.Ident{Name: "nil"}
 	case *ast.StarExpr:
 		return &ast.Ident{Name: "nil"}
+	case *ast.SelectorExpr:
+		ident, ok := v.X.(*ast.Ident)
+		if !ok {
+			// no info about import
+			return nil
+		}
+		zero := newZeroImportValueNode(v.Sel, typeInfo, ident.Name)
+		if zero == nil {
+			return nil
+		}
+		return zero
 	}
+	return nil
+}
+
+func newZeroImportValueNode(v *ast.Ident, typeInfo *types.Info, prefix string) ast.Expr {
+	// on parse error typeInfo is nil
+	if typeInfo == nil || typeInfo.Uses == nil {
+		return nil
+	}
+
+	// find type spec
+	obj, ok := typeInfo.Uses[v]
+	if !ok {
+		return nil
+	}
+
+	if prefix != "" {
+		prefix += "."
+	}
+
+	switch u := obj.Type().Underlying().(type) {
+	case *types.Struct:
+		return &ast.Ident{Name: prefix + v.Name + "{}"}
+	case *types.Interface:
+		return &ast.Ident{Name: "nil"}
+	case *types.Slice:
+		return &ast.Ident{Name: "nil"}
+	case *types.Pointer:
+		return &ast.Ident{Name: "nil"}
+	case *types.Map:
+		return &ast.Ident{Name: "nil"}
+	case *types.Chan:
+		return &ast.Ident{Name: "nil"}
+	case *types.Basic:
+		switch u.Kind() {
+		case types.Int, types.Int8, types.Int16, types.Int32, types.Int64,
+			types.Uint, types.Uint8, types.Uint16, types.Uint32, types.Uint64,
+			types.Uintptr:
+			return &ast.BasicLit{Kind: token.INT, Value: "0"}
+		case types.Float32, types.Float64:
+			return &ast.BasicLit{Kind: token.FLOAT, Value: "0"}
+		case types.Complex64, types.Complex128:
+			return &ast.BasicLit{Kind: token.IMAG, Value: "0"}
+		case types.Bool:
+			return &ast.Ident{Name: "false"}
+		case types.String:
+			return &ast.BasicLit{Kind: token.STRING, Value: `""`}
+		}
+	}
+
 	return nil
 }
 
