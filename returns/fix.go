@@ -150,7 +150,11 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 
 		if v.Obj == nil {
 			// check if ident is one of type imported with '.'
-			return newZeroImportValueNode(v, typeInfo, "")
+			zero := newZeroImportValueNode(v, typeInfo, "")
+			if zero == nil {
+				return nil
+			}
+			return zero
 		}
 
 		spec, ok := v.Obj.Decl.(*ast.TypeSpec)
@@ -166,7 +170,11 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 			return &ast.Ident{Name: v.Name + "{}"}
 		case *ast.Ident:
 			// type alias
-			return newZeroImportValueNode(v, typeInfo, "")
+			zero := newZeroImportValueNode(v, typeInfo, "")
+			if zero == nil {
+				return nil
+			}
+			return zero
 		}
 	case *ast.ArrayType:
 		if v.Len == nil {
@@ -184,7 +192,11 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 			// no info about import
 			return nil
 		}
-		return newZeroImportValueNode(v.Sel, typeInfo, ident.Name)
+		zero := newZeroImportValueNode(v.Sel, typeInfo, ident.Name)
+		if zero == nil {
+			return nil
+		}
+		return zero
 	}
 	return nil
 }
