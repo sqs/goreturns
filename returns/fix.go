@@ -201,7 +201,7 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 	return nil
 }
 
-func newZeroImportValueNode(v *ast.Ident, typeInfo *types.Info, prefix string) *ast.Ident {
+func newZeroImportValueNode(v *ast.Ident, typeInfo *types.Info, prefix string) ast.Expr {
 	// on parse error typeInfo is nil
 	if typeInfo == nil || typeInfo.Uses == nil {
 		return nil
@@ -217,12 +217,36 @@ func newZeroImportValueNode(v *ast.Ident, typeInfo *types.Info, prefix string) *
 		prefix += "."
 	}
 
-	switch obj.Type().Underlying().(type) {
+	switch u := obj.Type().Underlying().(type) {
 	case *types.Struct:
 		return &ast.Ident{Name: prefix + v.Name + "{}"}
 	case *types.Interface:
 		return &ast.Ident{Name: "nil"}
+	case *types.Slice:
+		return &ast.Ident{Name: "nil"}
+	case *types.Pointer:
+		return &ast.Ident{Name: "nil"}
+	case *types.Map:
+		return &ast.Ident{Name: "nil"}
+	case *types.Chan:
+		return &ast.Ident{Name: "nil"}
+	case *types.Basic:
+		switch u.Kind() {
+		case types.Int, types.Int8, types.Int16, types.Int32, types.Int64,
+			types.Uint, types.Uint8, types.Uint16, types.Uint32, types.Uint64,
+			types.Uintptr:
+			return &ast.BasicLit{Kind: token.INT, Value: "0"}
+		case types.Float32, types.Float64:
+			return &ast.BasicLit{Kind: token.FLOAT, Value: "0"}
+		case types.Complex64, types.Complex128:
+			return &ast.BasicLit{Kind: token.IMAG, Value: "0"}
+		case types.Bool:
+			return &ast.Ident{Name: "false"}
+		case types.String:
+			return &ast.BasicLit{Kind: token.STRING, Value: `""`}
+		}
 	}
+
 	return nil
 }
 
