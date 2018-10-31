@@ -174,6 +174,8 @@ func newZeroValueNode(typ ast.Expr, typeInfo *types.Info) ast.Expr {
 			return &ast.Ident{Name: "nil"}
 		}
 		return &ast.CompositeLit{Type: v}
+	case *ast.MapType:
+		return &ast.Ident{Name: "nil"}
 	case *ast.StarExpr:
 		return &ast.Ident{Name: "nil"}
 	case *ast.SelectorExpr:
