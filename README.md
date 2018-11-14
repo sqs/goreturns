@@ -15,9 +15,37 @@ is made complete by adding nil and 0 returns (the zero values for
 
 	func F() (*MyType, int, error) { return nil, 0, errors.New("foo") }
 
-To install:
+To install via **go get**:
 
 	go get -u github.com/sqs/goreturns
+
+To install from **source**:
+
+1. Clone this repo:
+
+```
+git clone https://github.com/sqs/goreturns
+```
+
+2. Modifiy the line $23$ from:
+
+```
+"github.com/sqs/goreturns/returns"
+```
+
+​	to:
+
+```
+"./returns"
+```
+
+3. Compile source by building:
+
+```
+go build goreturns.go
+```
+
+4. A binary name `goreturns` will generated in the source directory. Move the binary to your go directory, such as in Mac, `~/go`.
 
 To run:
 
