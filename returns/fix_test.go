@@ -430,7 +430,7 @@ func outer() (string, error) {
 }
 
 func TestFixReturns(t *testing.T) {
-	options := &Options{Fragment: true}
+	options := &Options{Fragment: true, Format: true}
 
 	for _, tt := range tests {
 		if *only != "" && tt.name != *only {

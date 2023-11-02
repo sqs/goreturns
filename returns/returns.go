@@ -32,6 +32,8 @@ type Options struct {
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
 
 	RemoveBareReturns bool // Remove bare returns
+
+	Format bool // Format source after inserting returns
 }
 
 // Process formats and adjusts returns for the provided file in a
@@ -69,9 +71,11 @@ func Process(pkgDir, filename string, src []byte, opt *Options) ([]byte, error) 
 		out = adjust(src, out)
 	}
 
-	out, err = format.Source(out)
-	if err != nil {
-		return nil, err
+	if opt.Format {
+		out, err = format.Source(out)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }
